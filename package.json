@@ -160,7 +160,7 @@
     "multihashing-async": "^0.8.0",
     "node-fetch": "^2.3.0",
     "p-iteration": "^1.1.8",
-    "p-queue": "^6.1.0",
+    "p-queue": "^6.2.0",
     "peer-book": "^0.9.1",
     "peer-id": "^0.12.2",
     "peer-info": "~0.15.1",
