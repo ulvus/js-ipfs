@@ -167,7 +167,7 @@
     "progress": "^2.0.1",
     "promise-nodeify": "^3.0.1",
     "promisify-es6": "^1.0.3",
-    "protons": "^1.0.1",
+    "protons": "^1.1.0",
     "pull-abortable": "^4.1.1",
     "pull-cat": "^1.1.11",
     "pull-defer": "~0.2.3",
