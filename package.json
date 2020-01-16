@@ -126,7 +126,7 @@
     "it-to-stream": "^0.1.1",
     "jsondiffpatch": "~0.3.11",
     "just-safe-set": "^2.1.0",
-    "kind-of": "^6.0.2",
+    "kind-of": "^6.0.3",
     "ky": "^0.15.0",
     "ky-universal": "~0.3.0",
     "libp2p": "^0.26.2",
