@@ -131,7 +131,7 @@
     "libp2p-gossipsub": "github:ChainSafe/gossipsub-js#71cb905983b125b50c64a9b75d745dfd7fb8f094",
     "libp2p-kad-dht": "^0.18.3",
     "libp2p-keychain": "^0.6.0",
-    "libp2p-mdns": "^0.13.0",
+    "libp2p-mdns": "^0.13.2",
     "libp2p-mplex": "^0.9.3",
     "libp2p-record": "~0.7.0",
     "libp2p-secio": "^0.12.1",
