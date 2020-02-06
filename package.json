@@ -145,7 +145,7 @@
     "libp2p-tcp": "^0.14.2",
     "libp2p-webrtc-star": "^0.17.6",
     "libp2p-websockets": "^0.13.0",
-    "mafmt": "^7.0.0",
+    "mafmt": "^7.1.0",
     "merge-options": "^2.0.0",
     "mortice": "^2.0.0",
     "multiaddr": "^7.2.1",
