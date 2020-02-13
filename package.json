@@ -69,7 +69,7 @@
   "dependencies": {
     "@hapi/ammo": "^4.0.0",
     "@hapi/boom": "^7.4.3",
-    "@hapi/hapi": "^18.3.2",
+    "@hapi/hapi": "^19.1.1",
     "@hapi/joi": "^15.0.0",
     "abort-controller": "^3.0.0",
     "any-signal": "^1.1.0",
