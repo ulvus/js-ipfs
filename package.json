@@ -94,7 +94,7 @@
     "get-folder-size": "^2.0.0",
     "hapi-pino": "^6.1.0",
     "hashlru": "^2.3.0",
-    "interface-datastore": "~0.8.0",
+    "interface-datastore": "~0.8.1",
     "ipfs-bitswap": "^0.27.1",
     "ipfs-block": "~0.8.1",
     "ipfs-block-service": "~0.16.0",
