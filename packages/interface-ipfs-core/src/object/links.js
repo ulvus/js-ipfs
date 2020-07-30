@@ -1,12 +1,14 @@
 /* eslint-env mocha */
 'use strict'
 
+const { Buffer } = require('buffer')
 const dagPB = require('ipld-dag-pb')
 const DAGNode = dagPB.DAGNode
 const { nanoid } = require('nanoid')
 const { getDescribe, getIt, expect } = require('../utils/mocha')
 const { asDAGLink } = require('./utils')
-const all = require('it-all')
+const testTimeout = require('../utils/test-timeout')
+const CID = require('cids')
 
 /** @typedef { import("ipfsd-ctl/src/factory") } Factory */
 /**
@@ -27,6 +29,12 @@ module.exports = (common, options) => {
     })
 
     after(() => common.clean())
+
+    it('should respect timeout option when getting the links from an object', () => {
+      return testTimeout(() => ipfs.object.links(new CID('Qmd7qZS4T7xXtsNFdRoK1trfMs5zU94EpokQ9WFtxdPxsZ'), {
+        timeout: 1
+      }))
+    })
 
     it('should get empty links by multihash', async () => {
       const testObj = {
@@ -51,11 +59,9 @@ module.exports = (common, options) => {
       const node1bCid = await ipfs.object.put(node1b)
 
       const links = await ipfs.object.links(node1bCid)
-      expect(node1b.Links[0]).to.eql({
-        Hash: links[0].Hash,
-        Tsize: links[0].Tsize,
-        Name: links[0].Name
-      })
+
+      expect(links).to.have.lengthOf(1)
+      expect(node1b.Links).to.deep.equal(links)
     })
 
     it('should get links by base58 encoded multihash', async () => {
@@ -87,11 +93,11 @@ module.exports = (common, options) => {
     it('should get links from CBOR object', async () => {
       const hashes = []
 
-      const res1 = await all(ipfs.add(Buffer.from('test data')))
-      hashes.push(res1[0].cid)
+      const res1 = await ipfs.add(Buffer.from('test data'))
+      hashes.push(res1.cid)
 
-      const res2 = await all(ipfs.add(Buffer.from('more test data')))
-      hashes.push(res2[0].cid)
+      const res2 = await ipfs.add(Buffer.from('more test data'))
+      hashes.push(res2.cid)
 
       const obj = {
         some: 'data',

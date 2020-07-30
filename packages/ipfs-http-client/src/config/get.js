@@ -1,22 +1,25 @@
 'use strict'
 
 const configure = require('../lib/configure')
+const toUrlSearchParams = require('../lib/to-url-search-params')
 
 module.exports = configure(api => {
   return async (key, options = {}) => {
-    if (key && typeof key === 'object') {
-      options = key
-      key = null
+    if (!key) {
+      throw new Error('key argument is required')
     }
 
-    const url = key ? 'config' : 'config/show'
-    const rsp = await api.post(url, {
+    const res = await api.post('config', {
       timeout: options.timeout,
       signal: options.signal,
-      searchParams: { arg: key }
+      searchParams: toUrlSearchParams({
+        arg: key,
+        ...options
+      }),
+      headers: options.headers
     })
-    const data = await rsp.json()
+    const data = await res.json()
 
-    return key ? data.Value : data
+    return data.Value
   }
 })

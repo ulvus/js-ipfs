@@ -3,6 +3,7 @@
 const multibase = require('multibase')
 const all = require('it-all')
 const { cidToString } = require('../../../utils/cid')
+const parseDuration = require('parse-duration').default
 
 module.exports = {
   // bracket syntax with '...' tells yargs to optionally accept a list
@@ -27,20 +28,21 @@ module.exports = {
     'cid-base': {
       describe: 'Number base to display CIDs in.',
       type: 'string',
-      choices: multibase.names
+      choices: Object.keys(multibase.names)
     },
     stream: {
       type: 'boolean',
       alias: 's',
       default: false,
       describe: 'Enable streaming of pins as they are discovered.'
+    },
+    timeout: {
+      type: 'string',
+      coerce: parseDuration
     }
   },
 
-  async handler ({ ctx, ipfsPath, type, quiet, cidBase, stream }) {
-    const { ipfs, print } = ctx
-    const paths = ipfsPath
-
+  async handler ({ ctx: { ipfs, print }, ipfsPath, type, quiet, cidBase, stream, timeout }) {
     const printPin = res => {
       let line = cidToString(res.cid, { base: cidBase })
       if (!quiet) {
@@ -50,11 +52,20 @@ module.exports = {
     }
 
     if (!stream) {
-      const pins = await all(ipfs.pin.ls(paths, { type, stream: false }))
+      const pins = await all(ipfs.pin.ls({
+        paths: ipfsPath,
+        type,
+        stream: false,
+        timeout
+      }))
       return pins.forEach(printPin)
     }
 
-    for await (const res of ipfs.pin.ls(paths, { type })) {
+    for await (const res of ipfs.pin.ls({
+      paths: ipfsPath,
+      type,
+      timeout
+    })) {
       printPin(res)
     }
   }

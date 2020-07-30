@@ -1,14 +1,14 @@
 'use strict'
 
 const debug = require('debug')
-const parseDuration = require('parse-duration')
+const parseDuration = require('parse-duration').default
 const crypto = require('libp2p-crypto')
 const errcode = require('err-code')
 
 const log = debug('ipfs:name:publish')
 log.error = debug('ipfs:name:publish:error')
 
-const { OFFLINE_ERROR, normalizePath } = require('../../utils')
+const { OFFLINE_ERROR, normalizePath, withTimeoutOption } = require('../../utils')
 const { resolvePath } = require('./utils')
 
 /**
@@ -21,10 +21,10 @@ const { resolvePath } = require('./utils')
  * @param {IPFS} self
  * @returns {Object}
  */
-module.exports = ({ ipns, dag, peerInfo, isOnline, keychain, options: constructorOptions }) => {
+module.exports = ({ ipns, dag, peerId, isOnline, keychain, options: constructorOptions }) => {
   const lookupKey = async keyName => {
     if (keyName === 'self') {
-      return peerInfo.id.privKey
+      return peerId.privKey
     }
 
     try {
@@ -57,7 +57,7 @@ module.exports = ({ ipns, dag, peerInfo, isOnline, keychain, options: constructo
     * @param {function(Error)} [callback]
     * @returns {Promise|void}
     */
-  return async function publish (value, options) {
+  return withTimeoutOption(async function publish (value, options) {
     options = options || {}
 
     const resolve = !(options.resolve === false)
@@ -98,5 +98,5 @@ module.exports = ({ ipns, dag, peerInfo, isOnline, keychain, options: constructo
 
     // Start publishing process
     return ipns.publish(results[0], value, pubLifetime)
-  }
+  })
 }

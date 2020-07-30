@@ -2,11 +2,11 @@
 'use strict'
 
 const { nanoid } = require('nanoid')
-
+const { Buffer } = require('buffer')
 const { fixture } = require('./utils')
 const { getDescribe, getIt, expect } = require('../utils/mocha')
-const all = require('it-all')
 const last = require('it-last')
+const testTimeout = require('../utils/test-timeout')
 
 /** @typedef { import("ipfsd-ctl/src/factory") } Factory */
 /**
@@ -25,10 +25,17 @@ module.exports = (common, options) => {
     before(async () => {
       ipfs = (await common.spawn()).api
       nodeId = ipfs.peerId.id
-      await all(ipfs.add(fixture.data, { pin: false }))
+      await ipfs.add(fixture.data, { pin: false })
     })
 
     after(() => common.clean())
+
+    it('should respect timeout option when publishing an IPNS name', () => {
+      return testTimeout(() => ipfs.name.publish(fixture.cid, {
+        allowOffline: true,
+        timeout: 1
+      }))
+    })
 
     it('should publish an IPNS record with the default params', async function () {
       this.timeout(50 * 1000)
@@ -42,7 +49,7 @@ module.exports = (common, options) => {
     })
 
     it('should publish correctly with the lifetime option and resolve', async () => {
-      const [{ path }] = await all(ipfs.add(Buffer.from('should publish correctly with the lifetime option and resolve')))
+      const { path } = await ipfs.add(Buffer.from('should publish correctly with the lifetime option and resolve'))
       await ipfs.name.publish(path, { allowOffline: true, resolve: false, lifetime: '2h' })
       expect(await last(ipfs.name.resolve(`/ipns/${nodeId}`))).to.eq(`/ipfs/${path}`)
     })

@@ -4,21 +4,15 @@ const dagPB = require('ipld-dag-pb')
 const DAGNode = dagPB.DAGNode
 const multicodec = require('multicodec')
 const Unixfs = require('ipfs-unixfs')
+const { withTimeoutOption } = require('../../utils')
+const { Buffer } = require('buffer')
 
 module.exports = ({ ipld, preload }) => {
-  return async function _new (template, options) {
-    options = options || {}
-
-    // allow options in the template position
-    if (template && typeof template !== 'string') {
-      options = template
-      template = null
-    }
-
+  return withTimeoutOption(async function _new (options = {}) {
     let data
 
-    if (template) {
-      if (template === 'unixfs-dir') {
+    if (options.template) {
+      if (options.template === 'unixfs-dir') {
         data = (new Unixfs('directory')).marshal()
       } else {
         throw new Error('unknown template')
@@ -31,7 +25,8 @@ module.exports = ({ ipld, preload }) => {
 
     const cid = await ipld.put(node, multicodec.DAG_PB, {
       cidVersion: 0,
-      hashAlg: multicodec.SHA2_256
+      hashAlg: multicodec.SHA2_256,
+      signal: options.signal
     })
 
     if (options.preload !== false) {
@@ -39,5 +34,5 @@ module.exports = ({ ipld, preload }) => {
     }
 
     return cid
-  }
+  })
 }

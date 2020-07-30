@@ -8,7 +8,11 @@ module.exports = configure(api => {
     const res = await api.post('files/mkdir', {
       timeout: options.timeout,
       signal: options.signal,
-      searchParams: toUrlSearchParams(path, options)
+      searchParams: toUrlSearchParams({
+        arg: path,
+        ...options
+      }),
+      headers: options.headers
     })
 
     await res.text()

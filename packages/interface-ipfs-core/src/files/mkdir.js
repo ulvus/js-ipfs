@@ -3,10 +3,11 @@
 
 const { nanoid } = require('nanoid')
 const { getDescribe, getIt, expect } = require('../utils/mocha')
-const multihash = require('multihashes')
+const multihash = require('multihashing-async').multihash
 const createShardedDirectory = require('../utils/create-sharded-directory')
 const all = require('it-all')
 const isShardAtPath = require('../utils/is-shard-at-path')
+const testTimeout = require('../utils/test-timeout')
 
 /** @typedef { import("ipfsd-ctl/src/factory") } Factory */
 /**
@@ -223,6 +224,12 @@ module.exports = (common, options) => {
         secs: mtime[0],
         nsecs: mtime[1]
       })
+    })
+
+    it('should respect timeout option when making a directory', async () => {
+      await testTimeout(() => ipfs.files.mkdir('/dir-to-make', {
+        timeout: 1
+      }))
     })
   })
 }

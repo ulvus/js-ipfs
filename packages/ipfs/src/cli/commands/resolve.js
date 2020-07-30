@@ -1,6 +1,7 @@
 'use strict'
 
 const multibase = require('multibase')
+const parseDuration = require('parse-duration').default
 
 module.exports = {
   command: 'resolve <name>',
@@ -16,14 +17,16 @@ module.exports = {
     'cid-base': {
       describe: 'Number base to display CIDs in.',
       type: 'string',
-      choices: multibase.names
+      choices: Object.keys(multibase.names)
+    },
+    timeout: {
+      type: 'string',
+      coerce: parseDuration
     }
   },
 
-  async handler ({ ctx, name, recursive, cidBase }) {
-    const { ipfs } = ctx
-
-    const res = await ipfs.resolve(name, { recursive, cidBase })
+  async handler ({ ctx: { ipfs }, name, recursive, cidBase, timeout }) {
+    const res = await ipfs.resolve(name, { recursive, cidBase, timeout })
     return res
   }
 }

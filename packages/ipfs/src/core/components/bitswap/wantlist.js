@@ -1,13 +1,11 @@
 'use strict'
 
-const PeerId = require('peer-id')
+const { withTimeoutOption } = require('../../utils')
 
 module.exports = ({ bitswap }) => {
-  return async function wantlist (peerId) { // eslint-disable-line require-await
-    const list = peerId
-      ? bitswap.wantlistForPeer(PeerId.createFromCID(peerId))
-      : bitswap.getWantlist()
+  return withTimeoutOption(async function wantlist (options = {}) { // eslint-disable-line require-await
+    const list = bitswap.getWantlist(options)
 
     return Array.from(list).map(e => e[1].cid)
-  }
+  })
 }

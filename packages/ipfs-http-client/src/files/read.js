@@ -10,10 +10,12 @@ module.exports = configure(api => {
     const res = await api.post('files/read', {
       timeout: options.timeout,
       signal: options.signal,
-      searchParams: toUrlSearchParams(path, {
-        ...options,
-        count: options.count || options.length
-      })
+      searchParams: toUrlSearchParams({
+        arg: path,
+        count: options.count || options.length,
+        ...options
+      }),
+      headers: options.headers
     })
 
     for await (const chunk of toIterable(res.body)) {

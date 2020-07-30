@@ -8,8 +8,9 @@ const DirSharded = require('ipfs-unixfs-importer/src/dir-sharded')
 const log = require('debug')('ipfs:mfs:core:utils:hamt-utils')
 const UnixFS = require('ipfs-unixfs')
 const mc = require('multicodec')
-const mh = require('multihashes')
+const mh = require('multihashing-async').multihash
 const last = require('it-last')
+const { Buffer } = require('buffer')
 
 const updateHamtDirectory = async (context, links, bucket, options) => {
   // update parent with new bit field
@@ -69,7 +70,7 @@ const addLinksToHamtBucket = async (links, bucket, rootBucket) => {
       }
 
       return (rootBucket || bucket).put(link.Name.substring(2), {
-        size: link.TSize,
+        size: link.Tsize,
         cid: link.Hash
       })
     })
@@ -195,7 +196,7 @@ const createShard = async (context, contents, options) => {
     })
   }
 
-  return last(shard.flush('', context.ipld, null))
+  return last(shard.flush('', context.block, null))
 }
 
 module.exports = {

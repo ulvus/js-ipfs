@@ -4,18 +4,18 @@ const errCode = require('err-code')
 const multibase = require('multibase')
 const { parallelMap, collect } = require('streaming-iterables')
 const pipe = require('it-pipe')
-const { resolvePath } = require('../../utils')
+const { resolvePath, withTimeoutOption } = require('../../utils')
 const { PinTypes } = require('./pin-manager')
 
 const PIN_RM_CONCURRENCY = 8
 
 module.exports = ({ pinManager, gcLock, dag }) => {
-  return async function rm (paths, options) {
+  return withTimeoutOption(async function rm (paths, options) {
     options = options || {}
 
     const recursive = options.recursive !== false
 
-    if (options.cidBase && !multibase.names.includes(options.cidBase)) {
+    if (options.cidBase && !multibase.names[options.cidBase]) {
       throw errCode(new Error('invalid multibase'), 'ERR_INVALID_MULTIBASE')
     }
 
@@ -60,5 +60,5 @@ module.exports = ({ pinManager, gcLock, dag }) => {
     } finally {
       release()
     }
-  }
+  })
 }

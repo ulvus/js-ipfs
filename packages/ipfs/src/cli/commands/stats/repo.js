@@ -1,25 +1,12 @@
 'use strict'
 
+// This is an alias for `repo stat`.
+const repoStats = require('../repo/stat.js')
+
 module.exports = {
-  command: 'repo',
+  ...repoStats,
 
-  describe: 'Get stats for the currently used repo',
-
-  builder: {
-    human: {
-      type: 'boolean',
-      default: false
-    }
-  },
-
-  async handler (argv) {
-    const { ipfs, print } = argv.ctx
-    const stats = await ipfs.stats.repo({ human: argv.human })
-    print(`repo status
-  number of objects: ${stats.numObjects}
-  repo size: ${stats.repoSize}
-  repo path: ${stats.repoPath}
-  version: ${stats.version}
-  maximum storage: ${stats.storageMax}`)
-  }
+  // The command needs to be renamed, else it would be `stats stat` instead of
+  // `stats repo`
+  command: 'repo'
 }

@@ -7,30 +7,24 @@ const toUrlSearchParams = require('../lib/to-url-search-params')
 
 module.exports = configure(api => {
   return async function * ls (path, options = {}) {
-    if (typeof path !== 'string') {
-      options = path || {}
-      path = '/'
+    if (!path || typeof path !== 'string') {
+      throw new Error('ipfs.files.ls requires a path')
     }
 
-    const res = await api.ndjson('files/ls', {
-      method: 'POST',
+    const res = await api.post('files/ls', {
       timeout: options.timeout,
       signal: options.signal,
-      searchParams: toUrlSearchParams(
-        CID.isCID(path) ? `/ipfs/${path}` : path, {
-          ...options,
-
-          // TODO the args below are not in the go-ipfs or interface core
-          stream: options.stream == null ? true : options.stream,
-          long: options.long == null ? true : options.long,
-
-          // TODO: remove after go-ipfs 0.5 is released
-          l: options.long == null ? true : options.long
-        }
-      )
+      searchParams: toUrlSearchParams({
+        arg: CID.isCID(path) ? `/ipfs/${path}` : path,
+        // default long to true, diverges from go-ipfs where its false by default
+        long: true,
+        ...options,
+        stream: true
+      }),
+      headers: options.headers
     })
 
-    for await (const result of res) {
+    for await (const result of res.ndjson()) {
       // go-ipfs does not yet support the "stream" option
       if ('Entries' in result) {
         for (const entry of result.Entries || []) {

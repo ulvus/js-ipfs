@@ -1,6 +1,6 @@
 'use strict'
 
-const multihashes = require('multihashes')
+const multihashes = require('multihashing-async').multihash
 const CID = require('cids')
 const protobuf = require('protons')
 const fnv1a = require('fnv1a')
@@ -11,6 +11,7 @@ const { default: Queue } = require('p-queue')
 const dagCborLinks = require('dag-cbor-links')
 const log = require('debug')('ipfs:pin:pin-set')
 const pbSchema = require('./pin.proto')
+const { Buffer } = require('buffer')
 
 const emptyKeyHash = 'QmdfTbBqBPQ7VNxZEYEj14VmRuZBkqFbiwReogJgS1zR1n'
 const emptyKey = multihashes.fromB58String(emptyKeyHash)
@@ -260,7 +261,7 @@ exports = module.exports = function (dag) {
         throw new Error('No link found with name ' + name)
       }
 
-      const res = await dag.get(link.Hash, '', { preload: false })
+      const res = await dag.get(link.Hash, { preload: false })
       const keys = []
       const stepPin = link => keys.push(link.Hash)
 
@@ -283,7 +284,7 @@ exports = module.exports = function (dag) {
             stepBin(link, idx, pbh.data)
 
             // walk the links of this fanout bin
-            const res = await dag.get(linkHash, '', { preload: false })
+            const res = await dag.get(link.Hash, { preload: false })
 
             await pinSet.walkItems(res.value, { stepPin, stepBin })
           }
@@ -304,7 +305,7 @@ exports = module.exports = function (dag) {
       for (const topLevelLink of rootNode.Links) {
         cids.push(topLevelLink.Hash)
 
-        const res = await dag.get(topLevelLink.Hash, '', { preload: false })
+        const res = await dag.get(topLevelLink.Hash, { preload: false })
 
         await pinSet.walkItems(res.value, { stepBin })
       }

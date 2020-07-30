@@ -1,6 +1,7 @@
 'use strict'
 
 const os = require('os')
+const parseDuration = require('parse-duration').default
 
 module.exports = {
   command: 'version',
@@ -28,26 +29,37 @@ module.exports = {
       type: 'boolean',
       default: false,
       describe: 'Print everything we have'
+    },
+    timeout: {
+      type: 'string',
+      coerce: parseDuration
     }
   },
 
-  async handler (argv) {
-    const { print, ipfs } = argv.ctx
-    const data = await ipfs.version()
+  async handler ({ ctx: { print, ipfs }, all, commit, repo, number, timeout }) {
+    const data = await ipfs.version({
+      timeout
+    })
 
-    const withCommit = argv.all || argv.commit
-    const parsedVersion = `${data.version}${withCommit ? `-${data.commit}` : ''}`
+    const withCommit = all || commit
+    const parsedVersion = `${data.version}${withCommit && data.commit ? `-${data.commit}` : ''}`
 
-    if (argv.repo) {
+    if (repo) {
       // go-ipfs prints only the number, even without the --number flag.
       print(data.repo)
-    } else if (argv.number) {
+    } else if (number) {
       print(parsedVersion)
-    } else if (argv.all) {
+    } else if (all) {
       print(`js-ipfs version: ${parsedVersion}`)
+      print(`interface-ipfs-core version: ${data['interface-ipfs-core']}`)
+      print(`ipfs-http-client version: ${data['ipfs-http-client']}`)
       print(`Repo version: ${data.repo}`)
       print(`System version: ${os.arch()}/${os.platform()}`)
       print(`Node.js version: ${process.version}`)
+
+      if (data.commit) {
+        print(`Commit: ${data.commit}`)
+      }
     } else {
       print(`js-ipfs version: ${parsedVersion}`)
     }

@@ -11,7 +11,7 @@ const updateTree = require('./utils/update-tree')
 const updateMfsRoot = require('./utils/update-mfs-root')
 const { DAGNode } = require('ipld-dag-pb')
 const mc = require('multicodec')
-const mh = require('multihashes')
+const mh = require('multihashing-async').multihash
 const pipe = require('it-pipe')
 const importer = require('ipfs-unixfs-importer')
 const exporter = require('ipfs-unixfs-exporter')
@@ -19,13 +19,15 @@ const last = require('it-last')
 const cp = require('./cp')
 const rm = require('./rm')
 const persist = require('ipfs-unixfs-importer/src/utils/persist')
+const { withTimeoutOption } = require('../../utils')
 
 const defaultOptions = {
   flush: true,
   shardSplitThreshold: 1000,
   hashAlg: 'sha2-256',
   cidVersion: 0,
-  recursive: false
+  recursive: false,
+  signal: undefined
 }
 
 function calculateModification (mode, originalMode, isDirectory) {
@@ -161,7 +163,7 @@ function calculateMode (mode, metadata) {
 }
 
 module.exports = (context) => {
-  return async function mfsChmod (path, mode, options) {
+  return withTimeoutOption(async function mfsChmod (path, mode, options) {
     options = applyDefaultOptions(options, defaultOptions)
 
     log(`Fetching stats for ${path}`)
@@ -170,7 +172,7 @@ module.exports = (context) => {
       cid,
       mfsDirectory,
       name
-    } = await toMfsPath(context, path)
+    } = await toMfsPath(context, path, options)
 
     if (cid.codec !== 'dag-pb') {
       throw errCode(new Error(`${path} was not a UnixFS node`), 'ERR_NOT_UNIXFS')
@@ -192,12 +194,13 @@ module.exports = (context) => {
             }
           }
         },
-        (source) => importer(source, context.ipld, {
+        (source) => importer(source, context.block, {
           ...options,
-          dagBuilder: async function * (source, ipld, options) {
+          pin: false,
+          dagBuilder: async function * (source, block, options) {
             for await (const entry of source) {
               yield async function () {
-                const cid = await persist(entry.content, ipld, options)
+                const cid = await persist(entry.content.serialize(), block, options)
 
                 return {
                   cid,
@@ -252,6 +255,6 @@ module.exports = (context) => {
     const newRootCid = await updateTree(context, trail, options)
 
     // Update the MFS record with the new CID for the root of the tree
-    await updateMfsRoot(context, newRootCid)
-  }
+    await updateMfsRoot(context, newRootCid, options)
+  })
 }

@@ -3,9 +3,10 @@
 
 const tests = require('interface-ipfs-core')
 const factory = require('../utils/factory')
-const { isNode } = require('ipfs-utils/src/env')
+const { isNode, isBrowser } = require('ipfs-utils/src/env')
 
 /** @typedef { import("ipfsd-ctl").ControllerOptions } ControllerOptions */
+
 describe('interface-ipfs-core over ipfs-http-client tests', function () {
   this.timeout(20000)
 
@@ -60,7 +61,18 @@ describe('interface-ipfs-core over ipfs-http-client tests', function () {
         sharding: true
       }
     }
-  }))
+  }), {
+    skip: isBrowser ? [{
+      name: 'should make directory and specify mtime as hrtime',
+      reason: 'Not designed to run in the browser'
+    }, {
+      name: 'should write file and specify mtime as hrtime',
+      reason: 'Not designed to run in the browser'
+    }, {
+      name: 'should set mtime as hrtime',
+      reason: 'Not designed to run in the browser'
+    }] : []
+  })
 
   tests.key(commonFactory)
 
@@ -101,13 +113,17 @@ describe('interface-ipfs-core over ipfs-http-client tests', function () {
     }]
   })
 
-  tests.pubsub(factory({
-    type: 'js',
-    ipfsBin: './src/cli/bin.js',
-    go: {
-      args: ['--enable-pubsub-experiment']
+  tests.pubsub(factory(
+    {
+      type: 'js',
+      ipfsBin: './src/cli/bin.js'
+    },
+    {
+      go: {
+        args: ['--enable-pubsub-experiment']
+      }
     }
-  }))
+  ))
 
   tests.repo(commonFactory)
 

@@ -4,19 +4,21 @@ const exporter = require('ipfs-unixfs-exporter')
 const applyDefaultOptions = require('./utils/apply-default-options')
 const toMfsPath = require('./utils/to-mfs-path')
 const errCode = require('err-code')
+const { withTimeoutOption } = require('../../utils')
 
 const defaultOptions = {
   offset: 0,
-  length: Infinity
+  length: Infinity,
+  signal: undefined
 }
 
 module.exports = (context) => {
-  return function mfsRead (path, options = {}) {
+  return withTimeoutOption(function mfsRead (path, options = {}) {
     options = applyDefaultOptions(options, defaultOptions)
 
     return {
       [Symbol.asyncIterator]: async function * read () {
-        const mfsPath = await toMfsPath(context, path)
+        const mfsPath = await toMfsPath(context, path, options)
         const result = await exporter(mfsPath.mfsPath, context.ipld)
 
         if (result.unixfs.type !== 'file') {
@@ -35,5 +37,5 @@ module.exports = (context) => {
         }
       }
     }
-  }
+  })
 }

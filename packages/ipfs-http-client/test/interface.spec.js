@@ -3,7 +3,7 @@
 
 const tests = require('interface-ipfs-core')
 const factory = require('./utils/factory')
-const isWindows = process.platform && process.platform === 'win32'
+const isWindows = global.process && global.process.platform && global.process.platform === 'win32'
 
 /** @typedef {import("ipfsd-ctl").ControllerOptions} ControllerOptions */
 
@@ -60,18 +60,7 @@ describe('interface-ipfs-core tests', () => {
     }]
   })
 
-  tests.bootstrap(commonFactory, {
-    skip: [{
-      name: 'should return a list containing the bootstrap peer when called with a valid arg (ip4)',
-      reason: 'TODO unskip when go-ipfs switches to p2p for libp2p keys'
-    }, {
-      name: 'should prevent duplicate inserts of bootstrap peers',
-      reason: 'TODO unskip when go-ipfs switches to p2p for libp2p keys'
-    }, {
-      name: 'should return a list containing the peer removed when called with a valid arg (ip4)',
-      reason: 'TODO unskip when go-ipfs switches to p2p for libp2p keys'
-    }]
-  })
+  tests.bootstrap(commonFactory)
 
   tests.config(commonFactory, {
     skip: [
@@ -79,6 +68,10 @@ describe('interface-ipfs-core tests', () => {
       {
         name: 'replace',
         reason: 'FIXME Waiting for fix on go-ipfs https://github.com/ipfs/js-ipfs-http-client/pull/307#discussion_r69281789 and https://github.com/ipfs/go-ipfs/issues/2927'
+      },
+      {
+        name: 'should respect timeout option when listing config profiles',
+        reason: 'TODO: Not implemented in go-ipfs'
       },
       {
         name: 'should list config profiles',
@@ -157,6 +150,10 @@ describe('interface-ipfs-core tests', () => {
       },
       {
         name: 'should ls from outside of mfs',
+        reason: 'TODO not implemented in go-ipfs yet'
+      },
+      {
+        name: 'should respect timeout option when changing the mode of a file',
         reason: 'TODO not implemented in go-ipfs yet'
       },
       {
@@ -249,6 +246,10 @@ describe('interface-ipfs-core tests', () => {
       },
       {
         name: 'should respect metadata when copying from outside of mfs',
+        reason: 'TODO not implemented in go-ipfs yet'
+      },
+      {
+        name: 'should respect timeout option when updating the modification time of files',
         reason: 'TODO not implemented in go-ipfs yet'
       },
       {
@@ -465,7 +466,18 @@ describe('interface-ipfs-core tests', () => {
     ]
   })
 
-  tests.miscellaneous(commonFactory)
+  tests.miscellaneous(commonFactory, {
+    skip: [
+      {
+        name: 'should include the ipfs-http-client version',
+        reason: 'TODO not implemented in go-ipfs yet'
+      },
+      {
+        name: 'should include the interface-ipfs-core version',
+        reason: 'TODO not implemented in go-ipfs yet'
+      }
+    ]
+  })
 
   tests.name(factory(
     {

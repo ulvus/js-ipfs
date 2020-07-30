@@ -1,9 +1,9 @@
 'use strict'
 
 const {
-  asBoolean,
-  asOctal
+  asBoolean
 } = require('../../utils')
+const parseDuration = require('parse-duration').default
 
 module.exports = {
   command: 'chmod [mode] [path]',
@@ -16,8 +16,7 @@ module.exports = {
       describe: 'The MFS path to change the mode of'
     },
     mode: {
-      type: 'int',
-      coerce: asOctal,
+      type: 'string',
       describe: 'The mode to use'
     },
     recursive: {
@@ -44,25 +43,29 @@ module.exports = {
       type: 'number',
       default: 1000,
       describe: 'If a directory has more links than this, it will be transformed into a hamt-sharded-directory'
+    },
+    timeout: {
+      type: 'string',
+      coerce: parseDuration
     }
   },
 
-  handler (argv) {
-    const {
-      ctx: { ipfs },
-      path,
-      mode,
-      recursive,
-      hashAlg,
-      flush,
-      shardSplitThreshold
-    } = argv
-
+  handler ({
+    ctx: { ipfs },
+    path,
+    mode,
+    recursive,
+    hashAlg,
+    flush,
+    shardSplitThreshold,
+    timeout
+  }) {
     return ipfs.files.chmod(path, mode, {
       recursive,
       hashAlg,
       flush,
-      shardSplitThreshold
+      shardSplitThreshold,
+      timeout
     })
   }
 }

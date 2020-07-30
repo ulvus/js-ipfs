@@ -5,6 +5,7 @@ const { rightpad } = require('../utils')
 const { cidToString } = require('../../utils/cid')
 const formatMode = require('ipfs-core-utils/src/files/format-mode')
 const formatMtime = require('ipfs-core-utils/src/files/format-mtime')
+const parseDuration = require('parse-duration').default
 
 module.exports = {
   command: 'ls <key>',
@@ -32,13 +33,15 @@ module.exports = {
     'cid-base': {
       describe: 'Number base to display CIDs in.',
       type: 'string',
-      choices: multibase.names
+      choices: Object.keys(multibase.names)
+    },
+    timeout: {
+      type: 'string',
+      coerce: parseDuration
     }
   },
 
-  async handler ({ ctx, key, recursive, headers, cidBase }) {
-    const { ipfs, print } = ctx
-
+  async handler ({ ctx: { ipfs, print }, key, recursive, headers, cidBase, timeout }) {
     // replace multiple slashes
     key = key.replace(/\/(\/+)/g, '/')
 
@@ -74,7 +77,7 @@ module.exports = {
       )
     }
 
-    for await (const link of ipfs.ls(key, { recursive })) {
+    for await (const link of ipfs.ls(key, { recursive, timeout })) {
       const mode = formatMode(link.mode, link.type === 'dir')
       const mtime = formatMtime(link.mtime)
       const cid = cidToString(link.cid, { base: cidBase })

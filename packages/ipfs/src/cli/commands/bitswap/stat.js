@@ -3,6 +3,7 @@
 const multibase = require('multibase')
 const { cidToString } = require('../../../utils/cid')
 const prettyBytes = require('pretty-bytes')
+const parseDuration = require('parse-duration').default
 
 module.exports = {
   command: 'stat',
@@ -13,17 +14,24 @@ module.exports = {
     'cid-base': {
       describe: 'Number base to display CIDs in. Note: specifying a CID base for v0 CIDs will have no effect.',
       type: 'string',
-      choices: multibase.names
+      choices: Object.keys(multibase.names)
     },
     human: {
       type: 'boolean',
       default: false
+    },
+    timeout: {
+      type: 'string',
+      coerce: parseDuration
     }
   },
 
-  async handler ({ ctx, cidBase, human }) {
+  async handler ({ ctx, cidBase, human, timeout }) {
     const { ipfs, print } = ctx
-    const stats = await ipfs.bitswap.stat()
+
+    const stats = await ipfs.bitswap.stat({
+      timeout
+    })
 
     if (human) {
       stats.blocksReceived = stats.blocksReceived.toNumber()

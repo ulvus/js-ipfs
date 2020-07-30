@@ -3,6 +3,7 @@
 'use strict'
 
 const { expect } = require('interface-ipfs-core/src/utils/mocha')
+const { Buffer } = require('buffer')
 const Daemon = require('../../src/cli/daemon')
 const loadFixture = require('aegir/fixtures')
 const os = require('os')
@@ -65,7 +66,7 @@ describe('HTTP Gateway', function () {
     gateway = http.api._httpApi._gatewayServers[0]
 
     // QmbQD7EMEL1zeebwBsWEfA3ndgSS6F7S6iTuwuqasPgVRi
-    await all(http.api._ipfs.add([
+    await all(http.api._ipfs.addAll([
       content('index.html'),
       emptyDir('empty-folder'),
       content('nested-folder/hello.txt'),
@@ -74,18 +75,18 @@ describe('HTTP Gateway', function () {
       emptyDir('nested-folder/empty')
     ]))
     // Qme79tX2bViL26vNjPsF3DP1R9rMKMvnPYJiKTTKPrXJjq
-    await all(http.api._ipfs.add(bigFile))
+    await http.api._ipfs.add(bigFile)
     // QmT78zSuBmuS4z925WZfrqQ1qHaJ56DQaTfyMUF7F8ff5o
-    await all(http.api._ipfs.add(Buffer.from('hello world' + '\n'), { cidVersion: 0 }))
+    await http.api._ipfs.add(Buffer.from('hello world' + '\n'), { cidVersion: 0 })
     // QmW2WQi7j6c7UgJTarActp7tDNikE4B2qXtFCfLPdsgaTQ
-    await all(http.api._ipfs.add([content('cat-folder/cat.jpg')]))
+    await http.api._ipfs.add([content('cat-folder/cat.jpg')])
     // QmVZoGxDvKM9KExc8gaL4uTbhdNtWhzQR7ndrY7J1gWs3F
-    await all(http.api._ipfs.add([
+    await all(http.api._ipfs.addAll([
       content('unsniffable-folder/hexagons-xml.svg'),
       content('unsniffable-folder/hexagons.svg')
     ]))
     // QmaRdtkDark8TgXPdDczwBneadyF44JvFGbrKLTkmTUhHk
-    await all(http.api._ipfs.add([content('utf8/cat-with-óąśśł-and-أعظم._.jpg')]))
+    await http.api._ipfs.add(content('utf8/cat-with-óąśśł-and-أعظم._.jpg'))
     // Publish QmW2WQi7j6c7UgJTarActp7tDNikE4B2qXtFCfLPdsgaTQ to IPNS using self key
     await http.api._ipfs.name.publish('QmW2WQi7j6c7UgJTarActp7tDNikE4B2qXtFCfLPdsgaTQ', { resolve: false })
   })
@@ -98,7 +99,7 @@ describe('HTTP Gateway', function () {
       url: '/ipfs'
     })
 
-    expect(res.statusCode).to.equal(400)
+    expect(res).to.have.property('statusCode', 400)
     expect(res.headers['cache-control']).to.equal('no-cache')
     expect(res.headers.etag).to.equal(undefined)
     expect(res.headers['x-ipfs-path']).to.equal(undefined)
@@ -111,7 +112,7 @@ describe('HTTP Gateway', function () {
       url: '/ipfs/invalid'
     })
 
-    expect(res.statusCode).to.equal(400)
+    expect(res).to.have.property('statusCode', 400)
     expect(res.headers['cache-control']).to.equal('no-cache')
     expect(res.headers.etag).to.equal(undefined)
     expect(res.headers['x-ipfs-path']).to.equal(undefined)
@@ -127,7 +128,7 @@ describe('HTTP Gateway', function () {
 
     // Expect 400 Bad Request
     // https://github.com/ipfs/go-ipfs/issues/4025#issuecomment-342250616
-    expect(res.statusCode).to.equal(400)
+    expect(res).to.have.property('statusCode', 400)
   })
 
   it('valid CIDv0', async () => {
@@ -136,7 +137,7 @@ describe('HTTP Gateway', function () {
       url: '/ipfs/QmT78zSuBmuS4z925WZfrqQ1qHaJ56DQaTfyMUF7F8ff5o'
     })
 
-    expect(res.statusCode).to.equal(200)
+    expect(res).to.have.property('statusCode', 200)
     expect(res.rawPayload).to.eql(Buffer.from('hello world' + '\n'))
     expect(res.payload).to.equal('hello world' + '\n')
     expect(res.headers['cache-control']).to.equal('public, max-age=29030400, immutable')
@@ -158,7 +159,7 @@ describe('HTTP Gateway', function () {
       }
     })
 
-    expect(res.statusCode).to.equal(200)
+    expect(res).to.have.property('statusCode', 200)
     expect(res.headers['access-control-allow-origin']).to.equal('http://example.com')
     expect(res.headers['access-control-allow-methods']).to.equal('GET')
   })
@@ -169,7 +170,7 @@ describe('HTTP Gateway', function () {
       method: 'GET',
       url: '/ipfs/TO-DO'
     }, (res) => {
-      expect(res.statusCode).to.equal(200)
+      expect(res).to.have.property('statusCode', 200)
       expect(res.rawPayload).to.eql(Buffer.from('hello world' + '\n'))
       expect(res.payload).to.equal('hello world' + '\n')
       expect(res.headers.etag).to.equal(TO-DO)
@@ -255,7 +256,7 @@ describe('HTTP Gateway', function () {
       url: '/ipfs/' + bigFileHash
     })
 
-    expect(res.statusCode).to.equal(200)
+    expect(res).to.have.property('statusCode', 200)
     expect(res.rawPayload).to.eql(bigFile)
     expect(res.headers['content-length']).to.equal(res.rawPayload.length).to.equal(15000000)
     expect(res.headers['x-ipfs-path']).to.equal(`/ipfs/${bigFileHash}`)
@@ -432,7 +433,7 @@ describe('HTTP Gateway', function () {
       url: '/ipfs/' + kitty
     })
 
-    expect(res.statusCode).to.equal(200)
+    expect(res).to.have.property('statusCode', 200)
     expect(res.headers['content-type']).to.equal('image/jpeg')
     expect(res.headers['content-length']).to.equal(res.rawPayload.length).to.equal(443230)
     expect(res.headers['x-ipfs-path']).to.equal('/ipfs/' + kitty)
@@ -455,7 +456,7 @@ describe('HTTP Gateway', function () {
       url: '/ipfs/' + hexagons
     })
 
-    expect(res.statusCode).to.equal(200)
+    expect(res).to.have.property('statusCode', 200)
     expect(res.headers['content-type']).to.equal('image/svg+xml')
   })
 
@@ -467,7 +468,7 @@ describe('HTTP Gateway', function () {
       url: '/ipfs/' + hexagons
     })
 
-    expect(res.statusCode).to.equal(200)
+    expect(res).to.have.property('statusCode', 200)
     expect(res.headers['content-type']).to.equal('image/svg+xml')
   })
 
@@ -479,7 +480,7 @@ describe('HTTP Gateway', function () {
       url: '/ipfs/' + dir
     })
 
-    expect(res.statusCode).to.equal(200)
+    expect(res).to.have.property('statusCode', 200)
     expect(res.headers['content-type']).to.equal('text/html; charset=utf-8')
     expect(res.headers['x-ipfs-path']).to.equal('/ipfs/' + dir)
     expect(res.headers['cache-control']).to.equal('no-cache')
@@ -502,7 +503,7 @@ describe('HTTP Gateway', function () {
       url: '/ipfs/' + dir
     })
 
-    expect(res.statusCode).to.equal(200)
+    expect(res).to.have.property('statusCode', 200)
     expect(res.headers['content-type']).to.equal('text/html; charset=utf-8')
     expect(res.headers['x-ipfs-path']).to.equal('/ipfs/' + dir)
     expect(res.headers['cache-control']).to.equal('public, max-age=29030400, immutable')
@@ -521,7 +522,7 @@ describe('HTTP Gateway', function () {
       url: '/ipfs/' + dir
     })
 
-    expect(res.statusCode).to.equal(200)
+    expect(res).to.have.property('statusCode', 200)
     expect(res.headers['content-type']).to.equal('text/html; charset=utf-8')
     expect(res.headers['x-ipfs-path']).to.equal('/ipfs/' + dir)
     expect(res.headers['cache-control']).to.equal('public, max-age=29030400, immutable')
@@ -568,7 +569,7 @@ describe('HTTP Gateway', function () {
     })
 
     // confirm payload is index.html
-    expect(res.statusCode).to.equal(200)
+    expect(res).to.have.property('statusCode', 200)
     expect(res.headers['content-type']).to.equal('text/html; charset=utf-8')
     expect(res.headers['x-ipfs-path']).to.equal('/ipfs/' + dir)
     expect(res.headers['cache-control']).to.equal('public, max-age=29030400, immutable')
@@ -588,7 +589,7 @@ describe('HTTP Gateway', function () {
       url: escapedPath
     })
 
-    expect(res.statusCode).to.equal(200)
+    expect(res).to.have.property('statusCode', 200)
     expect(res.headers['content-type']).to.equal('image/jpeg')
     expect(res.headers['x-ipfs-path']).to.equal(escapedPath)
     expect(res.headers['cache-control']).to.equal('public, max-age=29030400, immutable')
@@ -609,7 +610,7 @@ describe('HTTP Gateway', function () {
 
     const kittyDirectCid = 'Qmd286K6pohQcTKYqnS1YhWrCiS4gz7Xi34sdwMe9USZ7u'
 
-    expect(res.statusCode).to.equal(200)
+    expect(res).to.have.property('statusCode', 200)
     expect(res.headers['content-type']).to.equal('image/jpeg')
     expect(res.headers['content-length']).to.equal(res.rawPayload.length).to.equal(443230)
     expect(res.headers['x-ipfs-path']).to.equal(ipnsPath)
@@ -633,7 +634,7 @@ describe('HTTP Gateway', function () {
       url: ipnsPath
     })
 
-    expect(res.statusCode).to.equal(200)
+    expect(res).to.have.property('statusCode', 200)
     expect(res.headers['content-type']).to.equal('text/html; charset=utf-8')
     expect(res.headers['x-ipfs-path']).to.equal(ipnsPath)
     expect(res.headers['cache-control']).to.equal('no-cache')

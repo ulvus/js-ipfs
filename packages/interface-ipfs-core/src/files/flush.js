@@ -3,6 +3,7 @@
 
 const { nanoid } = require('nanoid')
 const { getDescribe, getIt, expect } = require('../utils/mocha')
+const testTimeout = require('../utils/test-timeout')
 
 /** @typedef { import("ipfsd-ctl/src/factory") } Factory */
 /**
@@ -32,9 +33,13 @@ module.exports = (common, options) => {
       }
     })
 
+    it('should require a path', () => {
+      expect(ipfs.files.flush()).to.eventually.be.rejected()
+    })
+
     it('should flush root', async () => {
       const root = await ipfs.files.stat('/')
-      const flushed = await ipfs.files.flush()
+      const flushed = await ipfs.files.flush('/')
 
       expect(root.cid.toString()).to.equal(flushed.toString())
     })
@@ -48,6 +53,12 @@ module.exports = (common, options) => {
       const flushed = await ipfs.files.flush(testDir)
 
       expect(dirStats.cid.toString()).to.equal(flushed.toString())
+    })
+
+    it('should respect timeout option when flushing changes', async () => {
+      await testTimeout(() => ipfs.files.flush('/', {
+        timeout: 1
+      }))
     })
   })
 }

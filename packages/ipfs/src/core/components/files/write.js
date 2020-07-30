@@ -2,6 +2,7 @@
 
 const log = require('debug')('ipfs:mfs:write')
 const importer = require('ipfs-unixfs-importer')
+const { Buffer } = require('buffer')
 const stat = require('./stat')
 const mkdir = require('./mkdir')
 const addLink = require('./utils/add-link')
@@ -18,6 +19,7 @@ const {
   MFS_MAX_CHUNK_SIZE
 } = require('../../utils')
 const last = require('it-last')
+const { withTimeoutOption } = require('../../utils')
 
 const defaultOptions = {
   offset: 0, // the offset in the file to begin writing
@@ -35,19 +37,20 @@ const defaultOptions = {
   leafType: 'raw',
   shardSplitThreshold: 1000,
   mode: undefined,
-  mtime: undefined
+  mtime: undefined,
+  signal: undefined
 }
 
 module.exports = (context) => {
-  return async function mfsWrite (path, content, options) {
+  return withTimeoutOption(async function mfsWrite (path, content, options) {
     options = applyDefaultOptions(options, defaultOptions)
 
     let source, destination, parent
     log('Reading source, destination and parent')
     await createLock().readLock(async () => {
       source = await toAsyncIterator(content, options)
-      destination = await toMfsPath(context, path)
-      parent = await toMfsPath(context, destination.mfsDirectory)
+      destination = await toMfsPath(context, path, options)
+      parent = await toMfsPath(context, destination.mfsDirectory, options)
     })()
     log('Read source, destination and parent')
     if (!options.parents && !parent.exists) {
@@ -59,7 +62,7 @@ module.exports = (context) => {
     }
 
     return updateOrImport(context, path, source, destination, options)
-  }
+  })
 }
 
 const updateOrImport = async (context, path, source, destination, options) => {
@@ -86,7 +89,7 @@ const updateOrImport = async (context, path, source, destination, options) => {
     }
 
     // get an updated mfs path in case the root changed while we were writing
-    const updatedPath = await toMfsPath(context, path)
+    const updatedPath = await toMfsPath(context, path, options)
     const trail = await toTrail(context, updatedPath.mfsDirectory, options)
     const parent = trail[trail.length - 1]
 
@@ -113,7 +116,7 @@ const updateOrImport = async (context, path, source, destination, options) => {
     const newRootCid = await updateTree(context, trail, options)
 
     // Update the MFS record with the new CID for the root of the tree
-    await updateMfsRoot(context, newRootCid)
+    await updateMfsRoot(context, newRootCid, options)
   })()
 }
 
@@ -204,14 +207,15 @@ const write = async (context, source, destination, options) => {
     // persist mode & mtime if set previously
     mode,
     mtime
-  }], context.ipld, {
+  }], context.block, {
     progress: options.progress,
     hashAlg: options.hashAlg,
     cidVersion: options.cidVersion,
     strategy: options.strategy,
     rawLeaves: options.rawLeaves,
     reduceSingleLeafToSelf: options.reduceSingleLeafToSelf,
-    leafType: options.leafType
+    leafType: options.leafType,
+    pin: false
   }))
 
   log(`Wrote ${result.cid}`)

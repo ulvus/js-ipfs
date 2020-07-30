@@ -1,15 +1,11 @@
 'use strict'
 
 const exporter = require('ipfs-unixfs-exporter')
-const applyDefaultOptions = require('./utils/apply-default-options')
 const toMfsPath = require('./utils/to-mfs-path')
 const {
-  MFS_FILE_TYPES
+  MFS_FILE_TYPES,
+  withTimeoutOption
 } = require('../../utils')
-
-const defaultOptions = {
-
-}
 
 const toOutput = (fsEntry) => {
   let type = 0
@@ -43,15 +39,8 @@ const toOutput = (fsEntry) => {
 }
 
 module.exports = (context) => {
-  return async function * mfsLs (path = '/', options = {}) {
-    if (typeof path === 'object' && !(path instanceof String)) {
-      options = path
-      path = '/'
-    }
-
-    options = applyDefaultOptions(options, defaultOptions)
-
-    const mfsPath = await toMfsPath(context, path)
+  return withTimeoutOption(async function * mfsLs (path, options = {}) {
+    const mfsPath = await toMfsPath(context, path, options)
     const fsDir = await exporter(mfsPath.mfsPath, context.ipld)
 
     // single file/node
@@ -65,5 +54,5 @@ module.exports = (context) => {
     for await (const fsEntry of fsDir.content(options)) {
       yield toOutput(fsEntry)
     }
-  }
+  })
 }

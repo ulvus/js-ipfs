@@ -5,6 +5,9 @@ const { DAGNode } = require('ipld-dag-pb')
 const { Buffer } = require('buffer')
 const multipartRequest = require('../lib/multipart-request')
 const configure = require('../lib/configure')
+const toUrlSearchParams = require('../lib/to-url-search-params')
+const anySignal = require('any-signal')
+const AbortController = require('abort-controller')
 
 module.exports = configure(api => {
   return async (obj, options = {}) => {
@@ -40,15 +43,20 @@ module.exports = configure(api => {
     if (Buffer.isBuffer(obj) && options.enc) {
       buf = obj
     } else {
+      options.enc = 'json'
       buf = Buffer.from(JSON.stringify(tmpObj))
     }
 
+    // allow aborting requests on body errors
+    const controller = new AbortController()
+    const signal = anySignal([controller.signal, options.signal])
+
     const res = await api.post('object/put', {
       timeout: options.timeout,
-      signal: options.signal,
-      searchParams: options,
+      signal,
+      searchParams: toUrlSearchParams(options),
       ...(
-        await multipartRequest(buf)
+        await multipartRequest(buf, controller, options.headers)
       )
     })
 

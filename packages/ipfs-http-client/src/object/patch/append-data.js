@@ -4,20 +4,29 @@ const { Buffer } = require('buffer')
 const CID = require('cids')
 const multipartRequest = require('../../lib/multipart-request')
 const configure = require('../../lib/configure')
+const toUrlSearchParams = require('../../lib/to-url-search-params')
+const anySignal = require('any-signal')
+const AbortController = require('abort-controller')
 
 module.exports = configure(api => {
   return async (cid, data, options = {}) => {
-    const searchParams = new URLSearchParams(options)
-    searchParams.set('arg', `${Buffer.isBuffer(cid) ? new CID(cid) : cid}`)
+    // allow aborting requests on body errors
+    const controller = new AbortController()
+    const signal = anySignal([controller.signal, options.signal])
 
-    const { Hash } = await (await api.post('object/patch/append-data', {
+    const res = await api.post('object/patch/append-data', {
       timeout: options.timeout,
-      signal: options.signal,
-      searchParams,
+      signal,
+      searchParams: toUrlSearchParams({
+        arg: `${Buffer.isBuffer(cid) ? new CID(cid) : cid}`,
+        ...options
+      }),
       ...(
-        await multipartRequest(data)
+        await multipartRequest(data, controller, options.headers)
       )
-    })).json()
+    })
+
+    const { Hash } = await res.json()
 
     return new CID(Hash)
   }

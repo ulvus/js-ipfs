@@ -11,7 +11,11 @@ module.exports = configure(api => {
     const res = await api.post('files/rm', {
       timeout: options.timeout,
       signal: options.signal,
-      searchParams: toUrlSearchParams(sources, options)
+      searchParams: toUrlSearchParams({
+        arg: sources,
+        ...options
+      }),
+      headers: options.headers
     })
 
     await res.text()

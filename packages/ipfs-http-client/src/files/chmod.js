@@ -8,7 +8,12 @@ module.exports = configure(api => {
     const res = await api.post('files/chmod', {
       timeout: options.timeout,
       signal: options.signal,
-      searchParams: toUrlSearchParams(path, { ...options, mode })
+      searchParams: toUrlSearchParams({
+        arg: path,
+        mode,
+        ...options
+      }),
+      headers: options.headers
     })
 
     await res.text()

@@ -1,22 +1,29 @@
 'use strict'
 
 const getDefaultConfig = require('../runtime/config-nodejs.js')
+const { withTimeoutOption } = require('../utils')
 const log = require('debug')('ipfs:core:config')
 
 module.exports = ({ repo }) => {
   return {
-    get: repo.config.get,
-    set: repo.config.set,
-    replace: repo.config.set,
+    getAll: withTimeoutOption(repo.config.getAll),
+    get: withTimeoutOption((key, options) => {
+      if (!key) {
+        return Promise.reject(new Error('key argument is required'))
+      }
+
+      return repo.config.get(key, options)
+    }),
+    set: withTimeoutOption(repo.config.set),
+    replace: withTimeoutOption(repo.config.replace),
     profiles: {
-      apply: applyProfile,
-      list: listProfiles
+      apply: withTimeoutOption(applyProfile),
+      list: withTimeoutOption(listProfiles)
     }
   }
 
-  async function applyProfile (profileName, opts) {
-    opts = opts || {}
-    const { dryRun } = opts
+  async function applyProfile (profileName, options = {}) {
+    const { dryRun } = options
 
     const profile = profiles[profileName]
 
@@ -25,12 +32,12 @@ module.exports = ({ repo }) => {
     }
 
     try {
-      const oldCfg = await repo.config.get()
+      const oldCfg = await repo.config.getAll(options)
       let newCfg = JSON.parse(JSON.stringify(oldCfg)) // clone
       newCfg = profile.transform(newCfg)
 
       if (!dryRun) {
-        await repo.config.set(newCfg)
+        await repo.config.replace(newCfg, options)
       }
 
       // Scrub private key from output
@@ -80,6 +87,7 @@ const profiles = {
       config.Addresses.API = defaultConfig.Addresses.API ? '/ip4/127.0.0.1/tcp/0' : ''
       config.Addresses.Gateway = defaultConfig.Addresses.Gateway ? '/ip4/127.0.0.1/tcp/0' : ''
       config.Addresses.Swarm = defaultConfig.Addresses.Swarm.length ? ['/ip4/127.0.0.1/tcp/0'] : []
+      config.Addresses.Delegates = []
       config.Bootstrap = []
       config.Discovery.MDNS.Enabled = false
       config.Discovery.webRTCStar.Enabled = false
@@ -95,6 +103,7 @@ const profiles = {
       config.Addresses.API = defaultConfig.Addresses.API
       config.Addresses.Gateway = defaultConfig.Addresses.Gateway
       config.Addresses.Swarm = defaultConfig.Addresses.Swarm
+      config.Addresses.Delegates = defaultConfig.Addresses.Delegates
       config.Bootstrap = defaultConfig.Bootstrap
       config.Discovery.MDNS.Enabled = defaultConfig.Discovery.MDNS.Enabled
       config.Discovery.webRTCStar.Enabled = defaultConfig.Discovery.webRTCStar.Enabled

@@ -3,7 +3,7 @@
 'use strict'
 
 const { expect } = require('interface-ipfs-core/src/utils/mocha')
-const last = require('it-last')
+const { Buffer } = require('buffer')
 const factory = require('../utils/factory')
 const pEvent = require('p-event')
 
@@ -71,8 +71,8 @@ describe.skip('gc', function () {
 
   const blockAddTests = [{
     name: 'add',
-    add1: () => last(ipfs.add(fixtures[0], { pin: false })),
-    add2: () => last(ipfs.add(fixtures[1], { pin: false })),
+    add1: () => ipfs.add(fixtures[0], { pin: false }),
+    add2: () => ipfs.add(fixtures[1], { pin: false }),
     resToCid: (res) => res[0].cid.toString()
   }, {
     name: 'object put',

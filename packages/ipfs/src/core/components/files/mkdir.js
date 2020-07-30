@@ -10,6 +10,7 @@ const updateTree = require('./utils/update-tree')
 const addLink = require('./utils/add-link')
 const withMfsRoot = require('./utils/with-mfs-root')
 const applyDefaultOptions = require('./utils/apply-default-options')
+const { withTimeoutOption } = require('../../utils')
 
 const defaultOptions = {
   parents: false,
@@ -18,11 +19,12 @@ const defaultOptions = {
   shardSplitThreshold: 1000,
   flush: true,
   mode: null,
-  mtime: null
+  mtime: null,
+  signal: undefined
 }
 
 module.exports = (context) => {
-  return async function mfsMkdir (path, options) {
+  return withTimeoutOption(async function mfsMkdir (path, options) {
     options = applyDefaultOptions(options, defaultOptions)
 
     if (!path) {
@@ -51,7 +53,7 @@ module.exports = (context) => {
       throw errCode(new Error("path cannot have the prefix 'ipfs'"), 'ERR_INVALID_PATH')
     }
 
-    const root = await withMfsRoot(context)
+    const root = await withMfsRoot(context, options)
     let parent
     const trail = []
     const emptyDir = await createNode(context, 'directory', options)
@@ -99,8 +101,8 @@ module.exports = (context) => {
     const newRootCid = await updateTree(context, trail, options)
 
     // Update the MFS record with the new CID for the root of the tree
-    await updateMfsRoot(context, newRootCid)
-  }
+    await updateMfsRoot(context, newRootCid, options)
+  })
 }
 
 const addEmptyDir = async (context, childName, emptyDir, parent, trail, options) => {

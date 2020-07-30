@@ -3,6 +3,7 @@
 const WS = require('libp2p-websockets')
 const WebRTCStar = require('libp2p-webrtc-star')
 const Multiplex = require('libp2p-mplex')
+const { NOISE } = require('libp2p-noise')
 const SECIO = require('libp2p-secio')
 const KadDHT = require('libp2p-kad-dht')
 const GossipSub = require('libp2p-gossipsub')
@@ -24,7 +25,8 @@ module.exports = () => {
         Multiplex
       ],
       connEncryption: [
-        SECIO
+        SECIO,
+        NOISE
       ],
       peerDiscovery: [],
       dht: KadDHT,
@@ -33,19 +35,19 @@ module.exports = () => {
     config: {
       peerDiscovery: {
         autoDial: true,
+        // [Bootstrap.tag] = 'bootstrap'
         bootstrap: {
           enabled: true
         },
+        // [WebRTCStar.discovery.tag]
         webRTCStar: {
-          enabled: true
-        },
-        websocketStar: {
           enabled: true
         }
       },
       dht: {
         kBucketSize: 20,
         enabled: false,
+        clientMode: true,
         randomWalk: {
           enabled: false
         },
@@ -63,6 +65,10 @@ module.exports = () => {
     },
     metrics: {
       enabled: true
+    },
+    peerStore: {
+      persistence: true,
+      threshold: 1
     }
   }
 }

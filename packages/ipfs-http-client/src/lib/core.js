@@ -4,9 +4,10 @@ const Multiaddr = require('multiaddr')
 const toUri = require('multiaddr-to-uri')
 const { isBrowser, isWebWorker } = require('ipfs-utils/src/env')
 const { URL } = require('iso-url')
-const parseDuration = require('parse-duration')
+const parseDuration = require('parse-duration').default
 const log = require('debug')('ipfs-http-client:lib:error-handler')
 const HTTP = require('ipfs-utils/src/http')
+const merge = require('merge-options')
 
 const isMultiaddr = (input) => {
   try {
@@ -63,7 +64,12 @@ const errorHandler = async (response) => {
     msg = err.message
   }
 
-  const error = new HTTP.HTTPError(response)
+  let error = new HTTP.HTTPError(response)
+
+  // This is what go-ipfs returns where there's a timeout
+  if (msg && msg.includes('context deadline exceeded')) {
+    error = new HTTP.TimeoutError(response)
+  }
 
   // If we managed to extract a message from the response, use it
   if (msg) {
@@ -116,9 +122,13 @@ class Client extends HTTP {
           if (
             value !== 'undefined' &&
             value !== 'null' &&
-            key !== 'signal' &&
-            key !== 'timeout'
+            key !== 'signal'
           ) {
+            out.append(kebabCase(key), value)
+          }
+
+          // server timeouts are strings
+          if (key === 'timeout' && !isNaN(value)) {
             out.append(kebabCase(key), value)
           }
         }
@@ -126,6 +136,19 @@ class Client extends HTTP {
         return out
       }
     })
+
+    delete this.get
+    delete this.put
+    delete this.delete
+    delete this.options
+
+    const fetch = this.fetch
+
+    this.fetch = (resource, options = {}) => {
+      return fetch.call(this, resource, merge(options, {
+        method: 'POST'
+      }))
+    }
   }
 }
 

@@ -21,7 +21,6 @@ Use the IPFS module as a dependency of your project to spawn in process instance
   - [`options.libp2p`](#optionslibp2p)
   - [Instance methods](#instance-methods)
     - [`node.start()`](#nodestart)
-    - [`node.stop()`](#nodestop)
 - [Static types and utils](#static-types-and-utils)
       - [Glob source](#glob-source)
         - [`globSource(path, [options])`](#globsourcepath-options)
@@ -74,7 +73,7 @@ const node = await IPFS.create({ repo: '/var/ipfs/data' })
 
 | Type | Default |
 |------|---------|
-| boolean | `true` |
+| `boolean` | `true` |
 
 `js-ipfs` comes bundled with a tool that automatically migrates your IPFS repository when a new version is available.
 
@@ -112,7 +111,7 @@ Instead of a boolean, you may provide an object with custom initialization optio
 
 | Type | Default |
 |------|---------|
-| boolean | `true` |
+| `boolean` | `true` |
 
  If `false`, do not automatically start the IPFS node. Instead, you’ll need to manually call [`node.start()`](#nodestart) yourself.
 
@@ -138,7 +137,7 @@ Prevents all logging output from the IPFS node.
 |------|---------|
 | object | `{ enabled: true, hop: { enabled: false, active: false } }` |
 
-Configure circuit relay (see the [circuit relay tutorial](https://github.com/ipfs/js-ipfs/tree/master/packages/ipfs/examples/circuit-relaying) to learn more).
+Configure circuit relay (see the [circuit relay tutorial](https://github.com/ipfs/js-ipfs/tree/master/examples/circuit-relaying) to learn more).
 
 - `enabled` (boolean): Enable circuit relay dialer and listener. (Default: `true`)
 - `hop` (object)
@@ -345,24 +344,6 @@ try {
 }
 ```
 
-#### `node.stop()`
-
-Close and stop listening for connections with other IPFS nodes, then release access to the node’s repo.
-
-This method is asynchronous and returns a promise.
-
-```js
-const node = await IPFS.create()
-console.log('Node is ready to use!')
-
-try {
-  await node.stop()
-  console.log('Node stopped!')
-} catch (error) {
-  console.error('Node failed to stop!', error)
-}
-```
-
 ## Static types and utils
 
 Aside from the default export, `ipfs` exports various types and utilities that are included in the bundle:
@@ -407,7 +388,7 @@ Returns an async iterable that yields `{ path, content }` objects suitable for p
 const IPFS = require('ipfs')
 const { globSource } = IPFS
 const ipfs = await IPFS.create()
-for await (const file of ipfs.add(globSource('./docs', { recursive: true }))) {
+for await (const file of ipfs.addAll(globSource('./docs', { recursive: true }))) {
   console.log(file)
 }
 /*
@@ -441,9 +422,10 @@ Returns an async iterable that yields `{ path, content }` objects suitable for p
 const IPFS = require('ipfs')
 const { urlSource } = IPFS
 const ipfs = await IPFS.create()
-for await (const file of ipfs.add(urlSource('https://ipfs.io/images/ipfs-logo.svg'))) {
-  console.log(file)
-}
+
+const file = await ipfs.add(urlSource('https://ipfs.io/images/ipfs-logo.svg'))
+console.log(file)
+
 /*
 {
   path: 'ipfs-logo.svg',

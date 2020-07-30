@@ -1,16 +1,17 @@
 /* eslint-env mocha */
 'use strict'
 
+const { Buffer } = require('buffer')
 const { nanoid } = require('nanoid')
-const all = require('it-all')
 const { fixtures } = require('../utils')
 const { getDescribe, getIt, expect } = require('../utils/mocha')
 const createShardedDirectory = require('../utils/create-sharded-directory')
 const CID = require('cids')
-const mh = require('multihashes')
-const Block = require('ipfs-block')
+const mh = require('multihashing-async').multihash
+const Block = require('ipld-block')
 const randomBytes = require('iso-random-stream/src/random')
 const isShardAtPath = require('../utils/is-shard-at-path')
+const testTimeout = require('../utils/test-timeout')
 
 /** @typedef { import("ipfsd-ctl/src/factory") } Factory */
 /**
@@ -34,20 +35,20 @@ module.exports = (common, options) => {
       })).api
     })
 
-    before(async () => { await all(ipfs.add(fixtures.smallFile.data)) })
+    before(async () => { await ipfs.add(fixtures.smallFile.data) })
 
     after(() => common.clean())
 
     it('refuses to stat files with an empty path', async () => {
-      await expect(ipfs.files.stat('')).to.be.rejected()
+      await expect(ipfs.files.stat('')).to.eventually.be.rejected()
     })
 
     it('refuses to lists files with an invalid path', async () => {
-      await expect(ipfs.files.stat('not-valid')).to.be.rejectedWith(/paths must start with a leading slash/)
+      await expect(ipfs.files.stat('not-valid')).to.eventually.be.rejectedWith(/paths must start with a leading slash/)
     })
 
     it('fails to stat non-existent file', async () => {
-      await expect(ipfs.files.stat('/i-do-not-exist')).to.be.rejectedWith(/does not exist/)
+      await expect(ipfs.files.stat('/i-do-not-exist')).to.eventually.be.rejectedWith(/does not exist/)
     })
 
     it('stats an empty directory', async () => {
@@ -379,6 +380,15 @@ module.exports = (common, options) => {
       })
       expect(stat.local).to.be.undefined()
       expect(stat.sizeLocal).to.be.undefined()
+    })
+
+    it('should respect timeout option when statting files', async () => {
+      const path = `/directory-${Math.random()}`
+      await ipfs.files.mkdir(path)
+
+      await testTimeout(() => ipfs.files.stat(path, {
+        timeout: 1
+      }))
     })
   })
 }

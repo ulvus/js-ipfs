@@ -1,11 +1,14 @@
 /* eslint-env mocha */
 'use strict'
 
+const { Buffer } = require('buffer')
 const { getDescribe, getIt, expect } = require('../utils/mocha')
 const CID = require('cids')
 const createShardedDirectory = require('../utils/create-sharded-directory')
 const all = require('it-all')
+const drain = require('it-drain')
 const randomBytes = require('iso-random-stream/src/random')
+const testTimeout = require('../utils/test-timeout')
 
 const MFS_FILE_TYPES = {
   file: 0,
@@ -32,7 +35,11 @@ module.exports = (common, options) => {
 
     after(() => common.clean())
 
-    it('lists the root directory by default', async () => {
+    it('should require a path', () => {
+      expect(all(ipfs.files.ls())).to.eventually.be.rejected()
+    })
+
+    it('lists the root directory', async () => {
       const fileName = `small-file-${Math.random()}.txt`
       const content = Buffer.from('Hello world')
 
@@ -40,7 +47,7 @@ module.exports = (common, options) => {
         create: true
       })
 
-      const files = await all(ipfs.files.ls())
+      const files = await all(ipfs.files.ls('/'))
 
       expect(files).to.have.lengthOf(1).and.to.containSubset([{
         cid: new CID('Qmetpc7cZmN25Wcc6R27cGCAvCDqCS5GjHG4v7xABEfpmJ'),
@@ -195,6 +202,12 @@ module.exports = (common, options) => {
 
       expect(files.length).to.equal(1)
       expect(files.filter(file => file.name === fileName)).to.be.ok()
+    })
+
+    it('should respect timeout option when listing files', async () => {
+      await testTimeout(() => drain(ipfs.files.ls('/', {
+        timeout: 1
+      })))
     })
   })
 }

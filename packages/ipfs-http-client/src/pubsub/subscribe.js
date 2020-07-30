@@ -1,11 +1,11 @@
 'use strict'
 
-const bs58 = require('bs58')
+const multibase = require('multibase')
 const { Buffer } = require('buffer')
 const log = require('debug')('ipfs-http-client:pubsub:subscribe')
 const SubscriptionTracker = require('./subscription-tracker')
-const { streamToAsyncIterator, ndjson } = require('../lib/core')
 const configure = require('../lib/configure')
+const toUrlSearchParams = require('../lib/to-url-search-params')
 
 module.exports = configure((api, options) => {
   const subsTracker = SubscriptionTracker.singleton()
@@ -13,9 +13,6 @@ module.exports = configure((api, options) => {
 
   return async (topic, handler, options = {}) => {
     options.signal = subsTracker.subscribe(topic, handler, options.signal)
-
-    const searchParams = new URLSearchParams(options)
-    searchParams.set('arg', topic)
 
     let res
 
@@ -32,11 +29,14 @@ module.exports = configure((api, options) => {
     }, 1000)
 
     try {
-      res = await api.stream('pubsub/sub', {
-        method: 'POST',
+      res = await api.post('pubsub/sub', {
         timeout: options.timeout,
         signal: options.signal,
-        searchParams
+        searchParams: toUrlSearchParams({
+          arg: topic,
+          ...options
+        }),
+        headers: options.headers
       })
     } catch (err) { // Initial subscribe fail, ensure we clean up
       subsTracker.unsubscribe(topic, handler)
@@ -45,7 +45,7 @@ module.exports = configure((api, options) => {
 
     clearTimeout(ffWorkaround)
 
-    readMessages(ndjson(streamToAsyncIterator(res)), {
+    readMessages(res.ndjson(), {
       onMessage: handler,
       onEnd: () => subsTracker.unsubscribe(topic, handler),
       onError: options.onError
@@ -60,7 +60,7 @@ async function readMessages (msgStream, { onMessage, onEnd, onError }) {
     for await (const msg of msgStream) {
       try {
         onMessage({
-          from: bs58.encode(Buffer.from(msg.from, 'base64')).toString(),
+          from: multibase.encode('base58btc', Buffer.from(msg.from, 'base64')).toString().slice(1),
           data: Buffer.from(msg.data, 'base64'),
           seqno: Buffer.from(msg.seqno, 'base64'),
           topicIDs: msg.topicIDs

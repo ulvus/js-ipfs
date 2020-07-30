@@ -6,19 +6,13 @@ const CID = require('cids')
 const { resolvePath } = require('../../utils')
 const PinManager = require('./pin-manager')
 const { PinTypes } = PinManager
+const { withTimeoutOption } = require('../../utils')
 
 const PIN_LS_CONCURRENCY = 8
 
 module.exports = ({ pinManager, dag }) => {
-  return async function * ls (paths, options) {
-    options = options || {}
-
+  return withTimeoutOption(async function * ls (options = {}) {
     let type = PinTypes.all
-
-    if (paths && paths.type) {
-      options = paths
-      paths = null
-    }
 
     if (options.type) {
       type = options.type
@@ -31,17 +25,17 @@ module.exports = ({ pinManager, dag }) => {
       }
     }
 
-    if (paths) {
-      paths = Array.isArray(paths) ? paths : [paths]
+    if (options.paths) {
+      options.paths = Array.isArray(options.paths) ? options.paths : [options.paths]
 
       // check the pinned state of specific hashes
-      const cids = await resolvePath(dag, paths)
+      const cids = await resolvePath(dag, options.paths)
 
       yield * parallelMap(PIN_LS_CONCURRENCY, async cid => {
         const { reason, pinned } = await pinManager.isPinnedWithType(cid, type)
 
         if (!pinned) {
-          throw new Error(`path '${paths[cids.indexOf(cid)]}' is not pinned`)
+          throw new Error(`path '${options.paths[cids.indexOf(cid)]}' is not pinned`)
         }
 
         if (reason === PinTypes.direct || reason === PinTypes.recursive) {
@@ -87,5 +81,5 @@ module.exports = ({ pinManager, dag }) => {
 
     // FIXME: https://github.com/ipfs/js-ipfs/issues/2244
     yield * pins
-  }
+  })
 }

@@ -1,9 +1,9 @@
 'use strict'
 
-const applyDefaultOptions = require('./utils/apply-default-options')
 const toSources = require('./utils/to-sources')
 const cp = require('./cp')
 const rm = require('./rm')
+const { withTimeoutOption } = require('../../utils')
 
 const defaultOptions = {
   parents: false,
@@ -11,19 +11,16 @@ const defaultOptions = {
   flush: true,
   cidVersion: 0,
   hashAlg: 'sha2-256',
-  shardSplitThreshold: 1000
+  shardSplitThreshold: 1000,
+  signal: undefined
 }
 
 module.exports = (context) => {
-  return async function mfsMv (...args) {
-    if (Array.isArray(args[0])) {
-      args = args[0].concat(args.slice(1))
-    }
-
+  return withTimeoutOption(async function mfsMv (...args) {
     const {
-      sources
-    } = await toSources(context, args)
-    const options = applyDefaultOptions(args, defaultOptions)
+      sources,
+      options
+    } = await toSources(context, args, defaultOptions)
 
     const cpArgs = sources
       .map(source => source.path).concat(options)
@@ -38,5 +35,5 @@ module.exports = (context) => {
 
     await cp(context).apply(null, cpArgs)
     await rm(context).apply(null, rmArgs)
-  }
+  })
 }
